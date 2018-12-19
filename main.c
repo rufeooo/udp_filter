@@ -43,15 +43,11 @@ int no_filter()
 }
 
 pcre2_code* re;
+pcre2_match_data* pcre2data;
 // Returns number of captured pairs + 1.
 // Negative on failure to match.
 int perform_match(char* subject, int len)
 {
-    pcre2_match_data* pcre2data = pcre2_match_data_create_from_pattern(re, 0);
-
-    if (pcre2data == NULL)
-        return 0;
-
     int rc = pcre2_match(
             re,
             (PCRE2_SPTR8)subject,
@@ -60,8 +56,6 @@ int perform_match(char* subject, int len)
             0,
             pcre2data,
             NULL);
-
-    pcre2_match_data_free(pcre2data);
 
     return rc;
 }
@@ -97,8 +91,14 @@ int main(int argc, char** argv)
         return 2;
     }
 
+    pcre2data = pcre2_match_data_create_from_pattern(re, 0);
+
+    if (pcre2data == NULL)
+        return 3;
+
     printf("Matching pattern: \"%s\"\n", pattern);
     running = 1;
     udp_serve(perform_match);
+    pcre2_match_data_free(pcre2data);
     pcre2_code_free(re);
 }
