@@ -60,20 +60,8 @@ int perform_match(char* subject, int len)
     return rc;
 }
 
-int main(int argc, char** argv)
+int pcre_filter_serve(char *pattern)
 {
-    for (int i = 0; i < argc; ++i)
-    {
-        fwrite(argv[i], sizeof(char), strlen(argv[i])/sizeof(char), stdout);
-        fwrite("\n", sizeof(char), sizeof(char), stdout);
-    }
-
-    if (argc != 2)
-    {
-        return 1;
-    }
-
-    char* pattern = argv[1];
     int pcre_err = 0;
     PCRE2_SIZE errOffset = 0;
     re = pcre2_compile(
@@ -101,4 +89,22 @@ int main(int argc, char** argv)
     udp_serve(perform_match);
     pcre2_match_data_free(pcre2data);
     pcre2_code_free(re);
+
+    return 0;
+}
+
+int main(int argc, char** argv)
+{
+    for (int i = 0; i < argc; ++i)
+    {
+        fwrite(argv[i], sizeof(char), strlen(argv[i])/sizeof(char), stdout);
+        fwrite("\n", sizeof(char), sizeof(char), stdout);
+    }
+
+    if (argc != 2)
+    {
+        return 1;
+    }
+
+    return pcre_filter_serve(argv[1]);
 }
