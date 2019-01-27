@@ -1,21 +1,22 @@
-#include <sys/types.h>
-#include <sys/socket.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <netinet/udp.h>
-#include <errno.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
 int running;
-int udp_serve(int (filter_fn)(char*, int))
+int udp_serve(int (filter_fn)(char*, int), short port)
 {
   int s = socket(AF_INET, SOCK_DGRAM, 0);
   struct sockaddr_in my_addr;
   memset(&my_addr, 0, sizeof(struct sockaddr_in));
   memset(&my_addr.sin_addr, 0, sizeof (struct in_addr));
-  my_addr.sin_port = htons(5000);
+  my_addr.sin_port = htons(port);
   my_addr.sin_family = AF_INET;
   bind(s, (struct sockaddr*)&my_addr, sizeof(struct sockaddr_in));
   printf("Bind Errno: %d\n", errno);
@@ -61,7 +62,7 @@ int perform_match(char* subject, int len)
   return rc;
 }
 
-int pcre_filter_serve(char *pattern)
+int pcre_filter_serve(char *pattern, short port)
 {
   int pcre_err = 0;
   PCRE2_SIZE errOffset = 0;
@@ -87,7 +88,7 @@ int pcre_filter_serve(char *pattern)
 
   printf("Matching pattern: \"%s\"\n", pattern);
   running = 1;
-  udp_serve(perform_match);
+  udp_serve(perform_match, port);
   pcre2_match_data_free(pcre2data);
   pcre2_code_free(re);
 
@@ -96,16 +97,24 @@ int pcre_filter_serve(char *pattern)
 
 int main(int argc, char** argv)
 {
-  for (int i = 0; i < argc; ++i)
-  {
-    fwrite(argv[i], sizeof(char), strlen(argv[i])/sizeof(char), stdout);
-    fwrite("\n", sizeof(char), sizeof(char), stdout);
-  }
+  char* filter;
+  short port = 5000;
+  int opt;
 
-  if (argc != 2)
-  {
+  while ((opt = getopt(argc, argv, "p:e:")) != -1) {
+    switch (opt) {
+      case 'p':
+        port = atoi(optarg);
+        break;
+      case 'e':
+        filter = optarg;
+        break;
+      default: /* '?' */
+        fprintf(stderr, "Usage: %s [-p port] [-e \"regex\"]\n",
+            argv[0]);
     return 1;
   }
+  }
 
-  return pcre_filter_serve(argv[1]);
+  return pcre_filter_serve(filter, port);
 }
