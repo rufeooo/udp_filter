@@ -31,6 +31,7 @@ int udp_serve(int (filter_fn)(char*, int))
         if (filter_fn((char*)&buf, bytes) > 0)
         {
             fwrite(buf, sizeof(char), bytes/sizeof(char), stdout);
+            fflush(stdout);
         }
     }
 
