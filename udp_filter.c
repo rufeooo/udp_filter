@@ -19,7 +19,7 @@ int udp_serve(int (filter_fn)(char*, int), short port)
   my_addr.sin_port = htons(port);
   my_addr.sin_family = AF_INET;
   bind(s, (struct sockaddr*)&my_addr, sizeof(struct sockaddr_in));
-  printf("Bind Errno: %d\n", errno);
+  printf("Bind errno: %d port: %d\n", errno, port);
 
   const int BUFLEN = 16;
   char buf[BUFLEN];
