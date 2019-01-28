@@ -28,7 +28,7 @@ int udp_serve(int (filter_fn)(char*, int), short port)
   {
     ssize_t bytes = recvfrom(s, buf, BUFLEN, 0, 0, 0);
 
-    printf("Bytes: %d Errno: %d\n", (int)bytes, errno);
+    // printf("Bytes: %d Errno: %d\n", (int)bytes, errno);
     if (filter_fn((char*)&buf, bytes) > 0)
     {
       fwrite(buf, sizeof(char), bytes/sizeof(char), stdout);
