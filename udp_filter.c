@@ -10,7 +10,7 @@
 #include <pcre2.h>
 
 int running;
-int udp_serve(int (filter_fn)(char*, int), short port)
+int udp_serve(int (filter_fn)(char*, int), short port, const int buffer_bytes)
 {
   int s = socket(AF_INET, SOCK_DGRAM, 0);
   struct sockaddr_in my_addr;
@@ -21,12 +21,11 @@ int udp_serve(int (filter_fn)(char*, int), short port)
   bind(s, (struct sockaddr*)&my_addr, sizeof(struct sockaddr_in));
   printf("Bind errno: %d port: %d\n", errno, port);
 
-  const int BUFLEN = 16;
-  char buf[BUFLEN];
+  char buf[buffer_bytes];
   memset(buf, 0, sizeof(buf));
   while (running)
   {
-    ssize_t bytes = recvfrom(s, buf, BUFLEN, 0, 0, 0);
+    ssize_t bytes = recvfrom(s, buf, buffer_bytes, 0, 0, 0);
 
     // printf("Bytes: %d Errno: %d\n", (int)bytes, errno);
     if (filter_fn((char*)&buf, bytes) > 0)
@@ -62,7 +61,7 @@ int perform_match(char* subject, int len)
   return rc;
 }
 
-int pcre_filter_serve(char *pattern, short port)
+int pcre_filter_serve(char *pattern, short port, int buffer_bytes)
 {
   int pcre_err = 0;
   PCRE2_SIZE errOffset = 0;
@@ -88,7 +87,7 @@ int pcre_filter_serve(char *pattern, short port)
 
   printf("Matching pattern: \"%s\"\n", pattern);
   running = 1;
-  udp_serve(perform_match, port);
+  udp_serve(perform_match, port, buffer_bytes);
   pcre2_match_data_free(pcre2data);
   pcre2_code_free(re);
 
@@ -99,15 +98,18 @@ int main(int argc, char** argv)
 {
   char* filter;
   short port = 5000;
-  int opt;
+  int opt, buffer_bytes = 4096;
 
-  while ((opt = getopt(argc, argv, "p:e:")) != -1) {
+  while ((opt = getopt(argc, argv, "p:e:b:")) != -1) {
     switch (opt) {
       case 'p':
         port = atoi(optarg);
         break;
       case 'e':
         filter = optarg;
+        break;
+      case 'b':
+        buffer_bytes = atoi(optarg);
         break;
       default: /* '?' */
         fprintf(stderr, "Usage: %s [-p port] [-e \"regex\"]\n",
@@ -116,5 +118,5 @@ int main(int argc, char** argv)
   }
   }
 
-  return pcre_filter_serve(filter, port);
+  return pcre_filter_serve(filter, port, buffer_bytes);
 }
