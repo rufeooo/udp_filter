@@ -96,7 +96,7 @@ int pcre_filter_serve(char *pattern, short port, int buffer_bytes)
 
 int main(int argc, char** argv)
 {
-  char* filter;
+  char* filter = ".*";
   short port = 5000;
   int opt, buffer_bytes = 4096;
 
