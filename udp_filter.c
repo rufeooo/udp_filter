@@ -115,7 +115,7 @@ int main(int argc, char** argv)
   int opt, buffer_bytes = 4096;
 
   output_file = stdout;
-  while ((opt = getopt(argc, argv, "p:e:b:f:")) != -1) {
+  while ((opt = getopt(argc, argv, "hp:e:b:f:")) != -1) {
     switch (opt) {
       case 'p':
         port = atoi(optarg);
