@@ -10,6 +10,7 @@
 #include <pcre2.h>
 
 int running;
+FILE *output_file;
 int udp_serve(int (filter_fn)(char*, int), short port, const int buffer_bytes)
 {
   int s = socket(AF_INET, SOCK_DGRAM, 0);
@@ -19,7 +20,11 @@ int udp_serve(int (filter_fn)(char*, int), short port, const int buffer_bytes)
   my_addr.sin_port = htons(port);
   my_addr.sin_family = AF_INET;
   bind(s, (struct sockaddr*)&my_addr, sizeof(struct sockaddr_in));
-  printf("Bind errno: %d port: %d\n", errno, port);
+  printf(
+      "Bind errno: %d Buffer size: %d port: %d\n",
+      errno,
+      buffer_bytes,
+      port);
 
   char buf[buffer_bytes];
   memset(buf, 0, sizeof(buf));
@@ -30,8 +35,8 @@ int udp_serve(int (filter_fn)(char*, int), short port, const int buffer_bytes)
     // printf("Bytes: %d Errno: %d\n", (int)bytes, errno);
     if (filter_fn((char*)&buf, bytes) > 0)
     {
-      fwrite(buf, sizeof(char), bytes/sizeof(char), stdout);
-      fflush(stdout);
+      fwrite(buf, sizeof(char), bytes/sizeof(char), output_file);
+      fflush(output_file);
     }
   }
 
@@ -94,13 +99,23 @@ int pcre_filter_serve(char *pattern, short port, int buffer_bytes)
   return 0;
 }
 
+void exit_with_usage(char* app)
+{
+  fprintf(
+      stderr,
+      "Usage: %s [-p port] [-e \"regex\"] -f file -b buffer_bytes\n",
+      app);
+  exit(1);
+}
+
 int main(int argc, char** argv)
 {
   char* filter = ".*";
   short port = 5000;
   int opt, buffer_bytes = 4096;
 
-  while ((opt = getopt(argc, argv, "p:e:b:")) != -1) {
+  output_file = stdout;
+  while ((opt = getopt(argc, argv, "p:e:b:f:")) != -1) {
     switch (opt) {
       case 'p':
         port = atoi(optarg);
@@ -111,11 +126,18 @@ int main(int argc, char** argv)
       case 'b':
         buffer_bytes = atoi(optarg);
         break;
+      case 'f':
+        output_file = fopen(optarg, "w");
+        if (output_file == NULL)
+        {
+          printf("Failed to open file %s", optarg);
+          exit_with_usage(argv[0]);
+        }
+
+        break;
       default: /* '?' */
-        fprintf(stderr, "Usage: %s [-p port] [-e \"regex\"]\n",
-            argv[0]);
-    return 1;
-  }
+        exit_with_usage(argv[0]);
+    }
   }
 
   return pcre_filter_serve(filter, port, buffer_bytes);
