@@ -16,9 +16,9 @@ int udp_serve(int (filter_fn)(char*, int), short port, const int buffer_bytes)
   int s = socket(AF_INET, SOCK_DGRAM, 0);
   struct sockaddr_in my_addr;
   memset(&my_addr, 0, sizeof(struct sockaddr_in));
-  memset(&my_addr.sin_addr, 0, sizeof (struct in_addr));
   my_addr.sin_port = htons(port);
   my_addr.sin_family = AF_INET;
+  my_addr.sin_addr.s_addr = htonl(0);
   bind(s, (struct sockaddr*)&my_addr, sizeof(struct sockaddr_in));
   printf(
       "Bind errno: %d Buffer size: %d port: %d\n",
